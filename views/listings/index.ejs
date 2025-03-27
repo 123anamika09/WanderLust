@@ -1,0 +1,28 @@
+<% layout("/layouts/boilerplate")%>
+<!-- use boilerplate for same page-->
+<body>
+  <h3>All Listings</h3>
+  <!-- <form method="GET" action="/listings/new">
+     here new.ejs file connected & get request-->
+  <!-- <button>Create New Listing</button> -->
+  <!-- here create route started where we get the form then submit the form & then it goes to POst : /Listings-->
+  <!-- </form>  -->
+   <div class="row row-cols-lg-3 row-cols-md- row-cols-sm-1">
+    <% for(let listing of allListings){ %>
+      <a href="/listings/<%=listing._id%>" class="listing-link">
+      <div class="card col">
+        <img src="<%=listing.image.url%>" class="card-img-top" alt="listingimage" style="height: 20rem;"/>
+        <div class="card-img-overlay"></div>
+        <div class="card-body">
+          <p class="card-text">
+           <b> <%=listing.title%></b>
+            <br />
+            &#x20B9 <%=listing.price.toLocaleString("en-in")%> / night
+          </p>
+        </div>
+      </div>
+    </a>
+      <%}%>
+   </div>
+
+</body>
