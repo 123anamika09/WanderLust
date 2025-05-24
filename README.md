@@ -19,9 +19,9 @@ WanderLust is a full-stack travel listing web application built using **Node.js*
 
 ## 📁 Project Setup
 
+
 ### 1. 📦 Clone the Repository
 
-```bash
 git clone https://github.com/123anamika09/WanderLust.git
 cd WanderLust
 
