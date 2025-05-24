@@ -38,6 +38,7 @@ npm install express mongoose ejs ejs-mate
 ### 5. open this url
 http://localhost:8080
 
+```bash
 ### 4. 🗃️ Project Structure Overview
 WanderLust/
 ├── init/ # Database seeding & initialization
@@ -67,7 +68,7 @@ WanderLust/
 ├── package.json
 ├── package-lock.json
 └── README.md
-
+```
 
 
 ✍️ Git Commands Summary (for contribution)
