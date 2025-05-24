@@ -4,7 +4,8 @@
     <br /><br />
     <h3>Create a new List</h3>
     <br />
-    <form method="POST" action="/listings">
+    <!--  validation from bootstrap is used here because by defualt browser msg we don'tt want it so we go thorugh bootstrap form -> vaidations & apply validation here -->
+    <form method="POST" action="/listings" novalidate class="needs-validation">
       <div>
         <label for="title" class="form-label">Title</label>
         <input
@@ -12,11 +13,18 @@
           placeholder="Add A catchy Title"
           type="text"
           class="form-control"
+          required
         />
+        <div class="valid-feedback">Title looks good</div>
       </div>
       <div>
         <label for="description" class="form-label">Description</label>
-        <textarea name="listing[description]" class="form-control"></textarea>
+        <textarea
+          name="listing[description]"
+          class="form-control"
+          required
+        ></textarea>
+        <div class="invalid-feedback">please enter a short description</div>
       </div>
 
       <div>
@@ -34,10 +42,11 @@
           <label for="price" class="form-label">Price</label>
           <input
             name="listing[price]"
-            type="number"
             placeholder="1200"
             class="form-control"
+            required
           />
+          <div class="invalid-feedback">price should be valid</div>
         </div>
         <div class="mb-3 col-md-8">
           <label for="country" class="form-label">Country</label>
@@ -46,7 +55,9 @@
             placeholder="India"
             type="text"
             class="form-control"
+            required
           />
+          <div class="invalid-feedback">please enter a coutry name</div>
         </div>
       </div>
 
@@ -57,7 +68,9 @@
           placeholder="Muzaffarpur,Bihar"
           type="text"
           class="form-control"
+          required
         />
+        <div class="invalid-feedback">please enter the location</div>
       </div>
 
       <!-- here we make key of an object listing[country]-->

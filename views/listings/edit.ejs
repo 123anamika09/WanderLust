@@ -4,7 +4,12 @@
   <div class="col-8 offset-2">
     <h3>Edit your listing</h3>
 
-    <form method="POST" action="/listings/<%= listing._id%>?_method=PUT">
+    <form
+      method="POST"
+      action="/listings/<%= listing._id%>?_method=PUT"
+      novalidate
+      class="needs-validation"
+    >
       <div class="mb-3">
         <label for="title" class="form-label">Title</label>
         <input
@@ -12,28 +17,29 @@
           value="<%= listing.title%>"
           type="text"
           class="form-control"
+          required
         />
+        <div class="valid-feedback">Title looks good</div>
       </div>
 
       <div class="mb-3">
         <label for="description" class="form-label">Description</label>
-        <textarea
-  name="listing[description]"
-  class="form-control"
-   ><%= listing.description %></textarea>
-
+        <textarea name="listing[description]" class="form-control" required>
+        <%= listing.description %>
+        </textarea>
+        <div class="invalid-feedback">please enter a short description</div>
       </div>
-
 
       <div class="mb-3">
         <label for="image" class="form-label">Image Link</label>
         <input
-  name="listing[image][url]"
-  value="<%= listing.image.url %>"
-  type="text"
-  class="form-control"
-/>
-
+          name="listing[image][url]"
+          value="<%= listing.image.url %>"
+          type="text"
+          class="form-control"
+          required
+        />
+        <div class="invalid-feedback">please enter valid image url</div>
       </div>
 
       <div class="row col-md-4">
@@ -44,7 +50,9 @@
             type="number"
             value="<%= listing.price%>"
             class="form-control"
+            required
           />
+          <div class="invalid-feedback">please enter a valid price</div>
         </div>
         <div class="mb-3 col-md-8">
           <label for="country" class="form-label">Country</label>
@@ -53,7 +61,9 @@
             value="<%= listing.country%>"
             type="text"
             class="form-control"
+            required
           />
+          <div class="invalid-feedback">please enter the valid country</div>
         </div>
       </div>
 
@@ -64,7 +74,9 @@
           value="<%= listing.location%>"
           type="text"
           class="form-control"
+          required
         />
+        <div class="invalid-feedback">please enter the valid location</div>
       </div>
 
       <!-- here we make key of an object listing[country]-->
@@ -74,3 +86,4 @@
     </form>
   </div>
 </div>
+<script src="/js/script.js"></script>
