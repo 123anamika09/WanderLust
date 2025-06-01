@@ -10,6 +10,7 @@ const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
 const { wrap } = require("module");
 const { listingSchema } = require("./schema.js");
+const Review = require("./modals/reviews.js");
 
 //database connectivity
 const Mongo_url = "mongodb://127.0.0.1:27017/wanderlust";
@@ -79,14 +80,18 @@ app.get("/listings/new",(req,res)=>{
 
 
 // -----------show route--------------------------------
-app.get("/listings/:id",wrapAsync(async(req,res)=>{
-    let {id} = req.params;
-   const listing =  await Listing.findById(id);
-   console.log(listing);
-   res.render("./listings/show.ejs",{listing});
+// app.get("/listings/:id",wrapAsync(async(req,res)=>{
+//     let {id} = req.params;
+//    const listing =  await Listing.findById(id);
+//    console.log(listing);
+//    res.render("./listings/show.ejs",{listing});
 
-}))
-;
+// }))
+// ;
+app.get("/listings/:id", wrapAsync(async (req, res) => {
+    const listing = await Listing.findById(req.params.id).populate("reviews");
+    res.render("listings/show", { listing });
+}));
 // ------------------------create Route------------
 app.post("/listings",
 validateListing,
@@ -110,14 +115,23 @@ validateListing,
 
 // --------------update route = edit & update route  -- Get And Put req --------------------------
 // edit route
-app.get("/listings/:id/edit" ,
-    validateListing,
-     wrapAsync(async(req,res)=>{
-    // let {id} = req.params;
-    // const listing =  await Listing.findById(id);  // listing findout
-    // res.render("listings/edit.ejs",{ listing });
-})
-);
+// app.get("/listings/:id/edit" ,
+//     validateListing,
+//      wrapAsync(async(req,res)=>{
+//     // let {id} = req.params;
+//     // const listing =  await Listing.findById(id);  // listing findout
+//     // res.render("listings/edit.ejs",{ listing });
+// })
+// );
+
+
+// ✅ FIXED: Removed validateListing from GET
+app.get("/listings/:id/edit", wrapAsync(async (req, res) => {
+    let { id } = req.params;
+    const listing = await Listing.findById(id);
+    res.render("listings/edit.ejs", { listing });
+}));
+
 
 // update route
 app.put("/listings/:id" ,wrapAsync(async(req,res)=>{
@@ -136,6 +150,55 @@ app.delete("/listings/:id",wrapAsync( async(req,res)=>{
     res.redirect("/listings");
 })
 );
+
+
+// --------------------------review Route--------------------
+//  Post Route
+app.post("/listings/:id/reviews", async (req, res) => {
+    try {
+        const listing = await Listing.findById(req.params.id);
+        
+        // Check if listing exists
+        if (!listing) {
+            return res.status(404).send("Listing not found");
+        }
+
+        // Ensure reviews array exists (backward compatibility)
+        if (!listing.reviews) {
+            listing.reviews = [];
+        }
+
+        // Create and save the new review
+        const newReview = new Review(req.body.review);
+        await newReview.save();
+
+        // Push the review's ObjectId into the listing's reviews array
+        listing.reviews.push(newReview._id);
+        await listing.save();
+
+        console.log("New review saved");
+        res.send("New review saved");
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+
+// app.post("/listings/:id/reviews", wrapAsync(async (req, res) => {
+//     let listing = await Listing.findById(req.params.id);
+//     if (!listing) {
+//         throw new ExpressError(404, "Listing not found");
+//     }
+
+//     let newReview = new Review(req.body.review);
+//     listing.reviews.push(newReview);
+//     await newReview.save();
+//     await listing.save();
+
+//     console.log("new review saved");
+//     res.redirect(`/listings/${listing._id}`); // 👈 Better than res.send
+// }));
 
 //  to send standard response like routes doesnot match to any path then it send 404 not found
 app.all("*", (req,res,next)=>{
