@@ -9,7 +9,7 @@ const ejsMate = require("ejs-mate"); // for styling
 const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
 const { wrap } = require("module");
-const { listingSchema } = require("./schema.js");
+const { listingSchema , reviewSchema } = require("./schema.js");
 const Review = require("./modals/reviews.js");
 
 //database connectivity
@@ -27,11 +27,20 @@ async function main() {
 app.set("view engine" , "ejs");
 app.set("views",path.join(__dirname,"views"));
 app.use(express.urlencoded({extended:true})); // for show route
+// app.use(express.json());
 app.use(methodOverride("_method"))
 app.engine('ejs',ejsMate); // for use ejsMate- styling  
 app.use(express.static(path.join(__dirname,"/public"))); // for using style.css  now we don't have go through all ejs file to do changes in style ...we onnly make changes in boilerplate
 
 
+
+
+app.use((req, res, next) => {
+  console.log(`Incoming ${req.method} ${req.url}`);
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+  next();
+});
 // -----index route------------------------------------------
 
 
@@ -53,11 +62,27 @@ app.get("/testListing" , wrapAsync(async(req,res)=>{
 app.get("/",(req,res)=>{
     res.send("hii ... i am the root");
 })
+
+//  validate fnc for listing schema 
 const validateListing =(req,res,next)=>{
 
     let {error} = listingSchema.validate(req.body);
     
     if(error){
+        let errMsg = error.details.map((el)=>el.message).join(",");
+        throw new ExpressError(400,error);
+    }else{
+        next();
+    }
+}
+
+//  validate fnc for review schema
+const validateReview =(req,res,next)=>{
+
+    let {error} = reviewSchema.validate(req.body);
+    
+    if(error){
+        let errMsg = error.details.map((el)=>el.message).join(",");
         throw new ExpressError(400,error);
     }else{
         next();
@@ -80,18 +105,14 @@ app.get("/listings/new",(req,res)=>{
 
 
 // -----------show route--------------------------------
-// app.get("/listings/:id",wrapAsync(async(req,res)=>{
-//     let {id} = req.params;
-//    const listing =  await Listing.findById(id);
-//    console.log(listing);
-//    res.render("./listings/show.ejs",{listing});
+app.get("/listings/:id",wrapAsync(async(req,res)=>{
+    let {id} = req.params;
+   const listing =  await Listing.findById(id);
+   console.log(listing);
+   res.render("./listings/show.ejs",{listing});
 
-// }))
-// ;
-app.get("/listings/:id", wrapAsync(async (req, res) => {
-    const listing = await Listing.findById(req.params.id).populate("reviews");
-    res.render("listings/show", { listing });
-}));
+}))
+;
 // ------------------------create Route------------
 app.post("/listings",
 validateListing,
@@ -112,6 +133,7 @@ validateListing,
 //    wrapSync is used here for  better way to write a try catch block 
 })
 );
+
 
 // --------------update route = edit & update route  -- Get And Put req --------------------------
 // edit route
@@ -154,35 +176,36 @@ app.delete("/listings/:id",wrapAsync( async(req,res)=>{
 
 // --------------------------review Route--------------------
 //  Post Route
-app.post("/listings/:id/reviews", async (req, res) => {
+app.post("/listings/:id/reviews",  validateReview, wrapAsync(async (req, res) => { // here validate review pss as a middleware  & wrapAsync is used here to handling error 
     try {
         const listing = await Listing.findById(req.params.id);
-        
-        // Check if listing exists
         if (!listing) {
             return res.status(404).send("Listing not found");
         }
-
-        // Ensure reviews array exists (backward compatibility)
         if (!listing.reviews) {
             listing.reviews = [];
         }
-
-        // Create and save the new review
-        const newReview = new Review(req.body.review);
+        const newReview = new Review(req.validatedReview);
         await newReview.save();
 
-        // Push the review's ObjectId into the listing's reviews array
         listing.reviews.push(newReview._id);
         await listing.save();
+        
+        
+        // res.render(`/listings/${listing._id}`)
+        // console.log("New review saved");
+        // res.send("New review saved");
+
 
         console.log("New review saved");
-        res.send("New review saved");
+        res.redirect(`/listings/${listing._id}`);
+
     } catch (err) {
         console.error(err);
         res.status(500).send("Internal Server Error");
     }
-});
+}));
+
 
 
 // app.post("/listings/:id/reviews", wrapAsync(async (req, res) => {
@@ -199,6 +222,7 @@ app.post("/listings/:id/reviews", async (req, res) => {
 //     console.log("new review saved");
 //     res.redirect(`/listings/${listing._id}`); // 👈 Better than res.send
 // }));
+
 
 //  to send standard response like routes doesnot match to any path then it send 404 not found
 app.all("*", (req,res,next)=>{

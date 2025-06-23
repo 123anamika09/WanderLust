@@ -9,7 +9,6 @@
         <div class="card-body">
          <!-- <b> <p class="card-text"><%=listing.title%></p></b> -->
           <br> 
-
          <%= listing.description %> <br>
          &#x20B9 <%=listing.price.toLocaleString("en-in")%> <br>
          <%=listing.location%>
@@ -20,30 +19,29 @@
     <!-- make a route forrr this -->
     <a href="/listings/<%=listing._id%>/edit" class="btn btn-dark col-1 offset-3 edit-btn"> Edit</a> <!-- here we do changes in listing by gettting it's id-->
     <br><br>
-  
- 
+
    <form method="POST" action="/listings/<%=listing._id%>?_method=DELETE">
     <button class="btn btn-dark offset-5">Delete</button>
    </form>
   </div>
   </div>
-
   <div class="col-8 offset-3 mb-3">
     <hr>
     <h4> Leave a Review</h4>
-    <form action="/listings/<%= listing.id %>/reviews" method="POST">
+    <form action="/listings/<%= listing.id %>/reviews" method="POST" novalidate class="needs-validation">
       <div class="mb-3 mt-3">
       <label for="rating" class="form-label">Rating</label>
       <input type="range" min="1" max="5" id="rating" name="review[rating]" class="form-range">
       </div>
       <div class="mb-3 mt-3">
         <label for="comment" class="form-label"></label>
-        <textarea name="review[comment]" id="comment" cols="30" rows="5" class="form-control"></textarea>
+        <textarea name="review[comment]" id="comment" cols="30" rows="5" class="form-control" required></textarea>
+        <div class="invalid-feedback">Please submit some comments for feedback</div>
       </div>
       <button class="btn btn-outline-dark">Submit</button>
     </form>
+    <hr>
+    <h4>All reviews</h4>
+    <p><%= listing.reviews %> </p>
   </div>
-
 </div>
-  
-
