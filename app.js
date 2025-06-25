@@ -2,16 +2,18 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const ejs = require("ejs");
-const Listing = require("./modals/listing.js");
 const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate"); // for styling
-const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
 const { wrap } = require("module");
 const { listingSchema , reviewSchema } = require("./schema.js");
-const Review = require("./modals/reviews.js");
 
+const listings = require("./routes/listing.js");
+const reviewss = require("./routes/review.js")
+
+const session = require("express-session") ; // for  message 
+const flash  = require("connect-flash");
 //database connectivity
 const Mongo_url = "mongodb://127.0.0.1:27017/wanderlust";
 main().then(()=>{
@@ -32,8 +34,31 @@ app.use(methodOverride("_method"))
 app.engine('ejs',ejsMate); // for use ejsMate- styling  
 app.use(express.static(path.join(__dirname,"/public"))); // for using style.css  now we don't have go through all ejs file to do changes in style ...we onnly make changes in boilerplate
 
+const sessionOptions={
+   
+    secret: "mysupersecretcode",
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly:true,
+    },
 
+};
 
+app.get("/",(req,res)=>{
+    res.send("hii ... i am the root");
+})
+
+app.use(session(sessionOptions)); // used the session
+app.use(flash());
+
+app.use((req,res,next)=>{
+    res.locals.success = req.flash("success");
+    res.locals.error = req.flash("error");
+    next();
+})
 
 app.use((req, res, next) => {
   console.log(`Incoming ${req.method} ${req.url}`);
@@ -41,187 +66,9 @@ app.use((req, res, next) => {
   console.log('Body:', req.body);
   next();
 });
-// -----index route------------------------------------------
 
-
-app.get("/testListing" , wrapAsync(async(req,res)=>{
-    let sampleListing = new Listing({
-        title:" My New Villa",
-        description:"By the beach",
-        price:1200,
-        location:"colangute,Goa",
-        country:"India",
-    });
-  await  sampleListing.save();
-  console.log("Sample was saved");
-  res.send("succesful tested");
-
-})
-)
-
-app.get("/",(req,res)=>{
-    res.send("hii ... i am the root");
-})
-
-//  validate fnc for listing schema 
-const validateListing =(req,res,next)=>{
-
-    let {error} = listingSchema.validate(req.body);
-    
-    if(error){
-        let errMsg = error.details.map((el)=>el.message).join(",");
-        throw new ExpressError(400,error);
-    }else{
-        next();
-    }
-}
-
-//  validate fnc for review schema
-const validateReview =(req,res,next)=>{
-
-    let {error} = reviewSchema.validate(req.body);
-    
-    if(error){
-        let errMsg = error.details.map((el)=>el.message).join(",");
-        throw new ExpressError(400,error);
-    }else{
-        next();
-    }
-}
-// -----index route------------------------------------------
-app.get("/listings",wrapAsync(async(req,res)=>{
-     const allListings= await Listing.find({});
-    //  console.log(allListings); 
-     res.render("./listings/index.ejs",{allListings});
-    }));
-
-
-// ----------------create : New & create Route-------------
-// ----------------- new route ----------------------------
-app.get("/listings/new",(req,res)=>{
-    res.render("listings/new.ejs" );
-});
-
-
-
-// -----------show route--------------------------------
-app.get("/listings/:id",wrapAsync(async(req,res)=>{
-    let {id} = req.params;
-   const listing =  await Listing.findById(id);
-   console.log(listing);
-   res.render("./listings/show.ejs",{listing});
-
-}))
-;
-// ------------------------create Route------------
-app.post("/listings",
-validateListing,
-    wrapAsync( async(req,res, next)=>{  // here it's async fnc we want to do changges in db show
-    // m1----- all method extract
-    // let { title,description,image, price,location, country } = req.body;
-    // m2 ----- make the key of an object
-    // let listing = req.body.listing;
-    // new listing( req.body.listing); //instance created
-  
-    //  we can write it like 
-    //  we send 400 error for clent side when the client does not send the proper data or any issue then we throw the error
-    
-
-     const newListing = new Listing(req.body.listing);
-    await newListing.save();
-    res.redirect("/listings");
-//    wrapSync is used here for  better way to write a try catch block 
-})
-);
-
-
-// --------------update route = edit & update route  -- Get And Put req --------------------------
-// edit route
-// app.get("/listings/:id/edit" ,
-//     validateListing,
-//      wrapAsync(async(req,res)=>{
-//     // let {id} = req.params;
-//     // const listing =  await Listing.findById(id);  // listing findout
-//     // res.render("listings/edit.ejs",{ listing });
-// })
-// );
-
-
-// ✅ FIXED: Removed validateListing from GET
-app.get("/listings/:id/edit", wrapAsync(async (req, res) => {
-    let { id } = req.params;
-    const listing = await Listing.findById(id);
-    res.render("listings/edit.ejs", { listing });
-}));
-
-
-// update route
-app.put("/listings/:id" ,wrapAsync(async(req,res)=>{
-    let {id} = req.params;
-  await  Listing.findByIdAndUpdate(id,{...req.body.listing}); // deconstruct the body
-  res.redirect("/listings");
-})
-);
-
-
-// --------------------delete route---------------
-app.delete("/listings/:id",wrapAsync( async(req,res)=>{
-    let {id} = req.params;
-    let deletedListing =  await Listing.findByIdAndDelete(id);
-    console.log(deletedListing);
-    res.redirect("/listings");
-})
-);
-
-
-// --------------------------review Route--------------------
-//  Post Route
-app.post("/listings/:id/reviews",  validateReview, wrapAsync(async (req, res) => { // here validate review pss as a middleware  & wrapAsync is used here to handling error 
-    try {
-        const listing = await Listing.findById(req.params.id);
-        if (!listing) {
-            return res.status(404).send("Listing not found");
-        }
-        if (!listing.reviews) {
-            listing.reviews = [];
-        }
-        const newReview = new Review(req.validatedReview);
-        await newReview.save();
-
-        listing.reviews.push(newReview._id);
-        await listing.save();
-        
-        
-        // res.render(`/listings/${listing._id}`)
-        // console.log("New review saved");
-        // res.send("New review saved");
-
-
-        console.log("New review saved");
-        res.redirect(`/listings/${listing._id}`);
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Internal Server Error");
-    }
-}));
-
-
-
-// app.post("/listings/:id/reviews", wrapAsync(async (req, res) => {
-//     let listing = await Listing.findById(req.params.id);
-//     if (!listing) {
-//         throw new ExpressError(404, "Listing not found");
-//     }
-
-//     let newReview = new Review(req.body.review);
-//     listing.reviews.push(newReview);
-//     await newReview.save();
-//     await listing.save();
-
-//     console.log("new review saved");
-//     res.redirect(`/listings/${listing._id}`); // 👈 Better than res.send
-// }));
+app.use("/listings",listings)
+app.use("/listings/:id/reviews",reviewss);
 
 
 //  to send standard response like routes doesnot match to any path then it send 404 not found
@@ -229,20 +76,11 @@ app.all("*", (req,res,next)=>{
   next(new ExpressError(404, "page not found")); // express error handle here 
 }
 )
-
-
-
 //  to handle server side validation we have custom error handler  .
 //  in server side validation when we pass data from server side in the form of api / postman/ hospscotch then may be the price should be in the string format 
 //  so here it create an error
 
 //  so we use middleware 
-// app.use((err,req,res,next)=>{
-//     //  expressError used here
-//     let {statusCode = 500, message ="SomeThing went wrong"} = err;
-
-//     res.status(statusCode).send(message)
-// })
 
 app.use((err, req, res, next) => {
      console.error("Error 💥:", err); // Log error
