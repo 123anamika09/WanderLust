@@ -4,6 +4,8 @@ const wrapAsync = require("../utils/wrapAsync.js");
 const ExpressError = require("../utils/ExpressError.js");
 const { listingSchema  } = require("../schema.js");
 const Listing = require("../modals/listing.js");
+const {isLoggedIn} = require("../middleware.js")
+
 
 //  validate fnc for listing schema 
 const validateListing =(req,res,next)=>{
@@ -17,6 +19,7 @@ const validateListing =(req,res,next)=>{
         next();
     }
 }
+
 // -----index route------------------------------------------
 router.get("/",wrapAsync(async(req,res)=>{
      const allListings= await Listing.find({});
@@ -27,8 +30,8 @@ router.get("/",wrapAsync(async(req,res)=>{
 
 // ----------------create : New & create Route-------------
 // ----------------- new route ----------------------------
-router.get("/new",(req,res)=>{
-    res.render("listings/new.ejs" );
+router.get("/new",isLoggedIn,(req,res)=>{ //isLOggedIn middleware passed here  
+    res.render("listings/new.ejs" );// form render
 });
 
 
@@ -36,8 +39,13 @@ router.get("/new",(req,res)=>{
 // -----------show route--------------------------------
 router.get("/:id",wrapAsync(async(req,res)=>{
     let {id} = req.params;
-   const listing =  await Listing.findById(id).populate("reviews");
+   const listing =  await Listing.findById(id).populate("reviews").populate("owner");
    console.log(listing);
+   if(!listing){
+    req.flash("error"," Listing not found DNE");
+    res.redirect("/listings");
+   }
+   console.log(listing)
    res.render("./listings/show.ejs",{listing});
 
 }));
@@ -45,6 +53,7 @@ router.get("/:id",wrapAsync(async(req,res)=>{
 // ------------------------create Route------------
 router.post("/",
 validateListing,
+isLoggedIn,
     wrapAsync( async(req,res, next)=>{  // here it's async fnc we want to do changges in db show
     // m1----- all method extract
     // let { title,description,image, price,location, country } = req.body;
@@ -66,27 +75,22 @@ validateListing,
 
 
 // --------------update route = edit & update route  -- Get And Put req --------------------------
-// edit route
-// app.get("/listings/:id/edit" ,
-//     validateListing,
-//      wrapAsync(async(req,res)=>{
-//     // let {id} = req.params;
-//     // const listing =  await Listing.findById(id);  // listing findout
-//     // res.render("listings/edit.ejs",{ listing });
-// })
-// );
 
 
 // ✅ FIXED: Removed validateListing from GET
-router.get("/:id/edit", wrapAsync(async (req, res) => {
+router.get("/:id/edit", isLoggedIn,wrapAsync(async (req, res) => {
     let { id } = req.params;
     const listing = await Listing.findById(id);
+    if(!listing){
+    req.flash("error"," Listing not found DNE");
+    res.redirect("/listings");
+   }
     res.render("listings/edit.ejs", { listing });
 }));
 
 
 // update route
-router.put("/:id" ,wrapAsync(async(req,res)=>{
+router.put("/:id" ,isLoggedIn,wrapAsync(async(req,res)=>{
     let {id} = req.params;
   await  Listing.findByIdAndUpdate(id,{...req.body.listing}); // deconstruct the body
    req.flash("success","Listing updated");
@@ -96,7 +100,7 @@ router.put("/:id" ,wrapAsync(async(req,res)=>{
 
 
 // --------------------delete route---------------
-router.delete("/:id",wrapAsync( async(req,res)=>{
+router.delete("/:id",isLoggedIn,wrapAsync( async(req,res)=>{
     let {id} = req.params;
     let deletedListing =  await Listing.findByIdAndDelete(id);
     console.log(deletedListing);

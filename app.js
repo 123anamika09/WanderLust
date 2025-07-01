@@ -8,12 +8,15 @@ const ejsMate = require("ejs-mate"); // for styling
 const ExpressError = require("./utils/ExpressError.js");
 const { wrap } = require("module");
 const { listingSchema , reviewSchema } = require("./schema.js");
-
-const listings = require("./routes/listing.js");
-const reviewss = require("./routes/review.js")
-
+const listingRouter = require("./routes/listing.js");
+const reviewsRouter = require("./routes/review.js")
+const userRouter = require("./routes/user.js")
 const session = require("express-session") ; // for  message 
 const flash  = require("connect-flash");
+const passport = require("passport");
+const LocalStrategy = require("passport-local");
+const User = require("./modals/user.js")
+
 //database connectivity
 const Mongo_url = "mongodb://127.0.0.1:27017/wanderlust";
 main().then(()=>{
@@ -53,12 +56,42 @@ app.get("/",(req,res)=>{
 
 app.use(session(sessionOptions)); // used the session
 app.use(flash());
+//    Pbkdf2 was chosen because platform independent  - hashing algo
+
+//  passport middleware && passport used middleware
+// configure strategy 
+// 1. 
+app.use(passport.initialize());
+// 2. session used to know that same user brows from page1 to page 2
+app.use(passport.session()); 
+// 3. 
+passport.use(new LocalStrategy(User.authenticate()));  //authenticate() //Generates a function that is used in Passport's LocalStrategy
+
+// use static serialize and deserialize of model for passport session support
+passport.serializeUser(User.serializeUser());//erializeUser() Generates a function that is used by Passport to serialize users into the session
+
+//deserializeUser() Generates a function that is used by Passport to deserialize users into the session
+passport.deserializeUser(User.deserializeUser());
+
 
 app.use((req,res,next)=>{
     res.locals.success = req.flash("success");
     res.locals.error = req.flash("error");
+    res.locals.currUser = req.user;
     next();
 })
+
+//  create a demo user to chek whether our passport work efficiently
+app.get("/demouser", async(req,res)=>{
+    let fakeUser = new User({
+        email:"student@gmail.com",
+        username:"Anamika"
+    });
+   let registeredUser = await User.register(fakeUser,"helloworld"); // user ka register method = static method automatic save the user in our databse
+    // register(user, password, cb) Convenience method to register a new user instance with a given password. Checks if username is unique.
+    res.send(registeredUser);
+})
+
 
 app.use((req, res, next) => {
   console.log(`Incoming ${req.method} ${req.url}`);
@@ -67,8 +100,9 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/listings",listings)
-app.use("/listings/:id/reviews",reviewss);
+app.use("/listings",listingRouter)
+app.use("/listings/:id/reviews",reviewsRouter);
+app.use("/", userRouter);
 
 
 //  to send standard response like routes doesnot match to any path then it send 404 not found
