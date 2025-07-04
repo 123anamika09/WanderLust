@@ -32,8 +32,8 @@ const listingSchema =  new Schema({
     }
   ],
   owner:{
-    type:Schema.Types.ObjectId,
-    ref:"User",
+    type: Schema.Types.ObjectId,
+    ref: "User",
   },
 });
 // Mongoose middleware - saare review ko delete kr dena

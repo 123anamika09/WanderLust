@@ -21,7 +21,8 @@ router.post("/signup" ,wrapAsync(async(req,res) => {
         return next(err);
     }
       req.flash("success", "Welcome back to the wanderlust");
-  res.redirect(req.locals.redirectUrl);
+  res.redirect(res.locals.redirectUrl || "/listings");
+
   })
   }catch(e){
         req.flash("error", e.message);
