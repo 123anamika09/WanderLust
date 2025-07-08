@@ -2,114 +2,45 @@ const express = require("express");
 const router = express.Router();
 const wrapAsync = require("../utils/wrapAsync.js");
 const Listing = require("../modals/listing.js");
-const {isLoggedIn , isOwner,validateListing} = require("../middleware.js")
-
+const {isLoggedIn , isOwner ,validateListing} = require("../middleware.js")
+const listingController  = require("../controllers/listings.js")
 
 // -----index route------------------------------------------
-router.get("/",wrapAsync(async(req,res)=>{
-     const allListings= await Listing.find({});
-    //  console.log(allListings); 
-     res.render("./listings/index.ejs",{allListings});
-    }));
+router.get("/", wrapAsync(listingController.index));
 
 
 // ----------------create : New & create Route-------------
 // ----------------- new route ----------------------------
-router.get("/new",isLoggedIn,(req,res)=>{ //isLOggedIn middleware passed here  
-    res.render("listings/new.ejs" );// form render
-});
-
-
-
+router.get("/new",isLoggedIn,listingController.renderNewForm);
+ 
 // -----------show route--------------------------------
-router.get("/:id",wrapAsync(async(req,res)=>{
-    let {id} = req.params;
-   const listing =  await Listing.findById(id)
-   .populate({
-     path: "reviews",
-     populate:{
-      path:"author",
-   },
-})
-.populate("owner");
-console.log(listing.reviews); 
-   console.log(listing);
-   if(!listing){
-    req.flash("error"," Listing not found DNE");
-    res.redirect("/listings");
-   }
-   console.log(listing)
-   res.render("./listings/show.ejs",{listing});
-
-}));
+router.get("/:id",wrapAsync(listingController.showListing));
 
 // ------------------------create Route------------
 router.post("/",
 validateListing,
 isLoggedIn,
-    wrapAsync( async(req,res, next)=>{  // here it's async fnc we want to do changges in db show
-    // m1----- all method extract
-    // let { title,description,image, price,location, country } = req.body;
-    // m2 ----- make the key of an object
-    // let listing = req.body.listing;
-    // new listing( req.body.listing); //instance created
-  
-    //  we can write it like 
-    //  we send 400 error for clent side when the client does not send the proper data or any issue then we throw the error
-    
-
-     const newListing = new Listing(req.body.listing);
-    //  console.log(req.user);
-     newListing.owner = req.user._id;
-    await newListing.save();
-
-    req.flash("success","New Listing created");
-    res.redirect("/listings");
-//    wrapSync is used here for  better way to write a try catch block 
-})
+    wrapAsync(listingController.createListing)
 );
 
 
 // --------------update route = edit & update route  -- Get And Put req --------------------------
+router.get("/:id/edit",
+     isLoggedIn
+    ,isOwner,
+    wrapAsync(listingController.renderEditForm));
 
-
-// ✅ FIXED: Removed validateListing from GET
-router.get("/:id/edit", isLoggedIn
-    ,isOwner,wrapAsync(async (req, res) => {
-    let { id } = req.params;
-    const listing = await Listing.findById(id);
-    if(!listing){
-    req.flash("error"," Listing not found DNE");
-    res.redirect("/listings");
-   }
-    res.render("listings/edit.ejs", { listing });
-}));
-
-
-// update route
-
-router.put("/:id" ,isLoggedIn,
-    isOwner,
+// update rout
+router.put("/:id" ,
+    isLoggedIn,
+    wrapAsync(isOwner),
     validateListing,
-    wrapAsync(async(req,res)=>{
-    let {id} = req.params;
-  await  Listing.findByIdAndUpdate(id,{...req.body.listing}); // deconstruct the body
-   req.flash("success","Listing updated");
-  res.redirect(`/listings/${id}`);
-})
+    wrapAsync(listingController.updateListing)
 );
-
-
 // --------------------delete route---------------
 router.delete("/:id",isLoggedIn
     ,isOwner
-    ,wrapAsync( async(req,res)=>{
-    let {id} = req.params;
-    let deletedListing =  await Listing.findByIdAndDelete(id);
-    console.log(deletedListing);
-     req.flash("success","Listing deleted");
-    res.redirect("/listings");
-})
+    ,wrapAsync(listingController.destroyListing )
 );
 
 module.exports= router;

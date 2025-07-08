@@ -1,4 +1,5 @@
 const Listing = require("./modals/listing")
+const Review = require("./modals/reviews.js");
 const ExpressError = require("./utils/ExpressError.js");
 const { listingSchema, reviewSchema  } = require("./schema.js");
 
@@ -29,6 +30,28 @@ module.exports.isOwner = async (req, res, next) => {
     }
     next(); // user is owner, continue to next middleware/route
 };
+
+module.exports.isReviewAuthor = async (req, res, next) => {
+    let {id, reviewId } = req.params;
+    let review = await Review.findById(reviewId);
+
+    
+    if (!review) {
+    req.flash("error", "Review not found.");
+    return res.redirect(`/listings/${id}`);
+  }  
+  if (!review.author || !review.author.equals(res.locals.currUser._id)) {
+    req.flash("error", "You are not the author of this review.");
+    return res.redirect(`/listings/${id}`);
+  }
+    next(); 
+};
+
+
+
+
+
+
 //  validate fnc for listing schema 
 module.exports.validateListing =(req,res,next)=>{
 
@@ -36,7 +59,7 @@ module.exports.validateListing =(req,res,next)=>{
     
     if(error){
         let errMsg = error.details.map((el)=>el.message).join(",");
-        throw new ExpressError(400,error);
+        throw new ExpressError(400,errMsg);
     }else{
         next();
     }

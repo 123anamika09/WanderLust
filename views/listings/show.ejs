@@ -56,7 +56,11 @@
   <% for(review of listing.reviews) {%>
   <div class="card col-5  ms-3 mb-3">
      <div class="card-body">
-       <h5 class="card-title"> <%= review.author.username %></h5>
+        <% if (review.author && review.author.username) { %>
+          <h5 class="card-title">@<%= review.author.username %></h5>
+        <% } else { %>
+          <h5 class="card-title">Anonymous User</h5>
+        <% } %>
 
         <p class="card-text"><%= review.comment%></p>
          <p class="card-text"><%= review.rating%> stars</p> 

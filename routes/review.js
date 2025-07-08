@@ -5,7 +5,7 @@ const wrapAsync = require("../utils/wrapAsync.js");
 const ExpressError = require("../utils/ExpressError.js");
 const Review = require("../modals/reviews.js");
 const Listing = require("../modals/listing.js");
-const {validateReview, isLoggedIn} = require("../middleware.js")
+const {validateReview, isLoggedIn, isReviewAuthor} = require("../middleware.js")
 
 // --------------------------review Route--------------------
 //  Post review Route
@@ -24,7 +24,7 @@ router.post("/",
         }
         let newReview = new Review(req.body.review);
         newReview.author = req.user._id;
-        console.log(newReview)
+        console.log(newReview);
         await newReview.save();
 
         listing.reviews.push(newReview._id);
@@ -44,7 +44,10 @@ router.post("/",
 
 // DELETE Route to delete review 
 // /listings/:id/reviews ye comman part h saare route me to isk hm hta kr direct  use kr skte 
-router.delete("/:reviewId",wrapAsync(async(req,res)=>{
+router.delete("/:reviewId",
+    isLoggedIn,
+    isReviewAuthor,
+    wrapAsync(async(req,res)=>{
     let {id, reviewId} = req.params;
    await Listing.findByIdAndUpdate(id, {$pull: { reviews: reviewId } });
  // reviews array se reviewid ko delete krn 
