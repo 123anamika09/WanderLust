@@ -1,5 +1,6 @@
 const Listing = require("./modals/listing")
-
+const ExpressError = require("./utils/ExpressError.js");
+const { listingSchema, reviewSchema  } = require("./schema.js");
 
 module.exports.isLoggedIn = (req, res, next) => {
     if (!req.isAuthenticated()) {
@@ -17,11 +18,39 @@ module.exports.saveRedirectUrl = (req, res, next) => {
     }
     next();
 };
-module.exports.isOwner =async (req,res,next)=>{
-   let {id} = req.params;
-    let listing =   await Listing.findById(id);
-    if(!res.locals.currUser|| listing.owner._id.equals(res.locals.currUser._id)){
-        req.flash("error", "you do not have the permission to edit.");
-       return res.redirect(`/listings/${id}`);
+module.exports.isOwner = async (req, res, next) => {
+    let { id } = req.params;
+    let listing = await Listing.findById(id);
+
+    // Check: User not logged in OR user is NOT the owner
+    if (!res.locals.currUser || !listing.owner.equals(res.locals.currUser._id)) {
+        req.flash("error", "You are not the owner of this list. ");
+        return res.redirect(`/listings/${id}`);
+    }
+    next(); // user is owner, continue to next middleware/route
+};
+//  validate fnc for listing schema 
+module.exports.validateListing =(req,res,next)=>{
+
+    let {error} = listingSchema.validate(req.body);
+    
+    if(error){
+        let errMsg = error.details.map((el)=>el.message).join(",");
+        throw new ExpressError(400,error);
+    }else{
+        next();
+    }
+}
+
+//  validate fnc for review schema
+module.exports.validateReview =(req,res,next)=>{
+
+    let {error} = reviewSchema.validate(req.body);
+    
+    if(error){
+        let errMsg = error.details.map((el)=>el.message).join(",");
+        throw new ExpressError(400,error);
+    }else{
+        next();
     }
 }

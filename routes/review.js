@@ -3,29 +3,16 @@ const router = express.Router({mergeParams:true});
 
 const wrapAsync = require("../utils/wrapAsync.js");
 const ExpressError = require("../utils/ExpressError.js");
-const { listingSchema , reviewSchema } = require("../schema.js");
 const Review = require("../modals/reviews.js");
 const Listing = require("../modals/listing.js");
-
-
-
-
-//  validate fnc for review schema
-const validateReview =(req,res,next)=>{
-
-    let {error} = reviewSchema.validate(req.body);
-    
-    if(error){
-        let errMsg = error.details.map((el)=>el.message).join(",");
-        throw new ExpressError(400,error);
-    }else{
-        next();
-    }
-}
+const {validateReview, isLoggedIn} = require("../middleware.js")
 
 // --------------------------review Route--------------------
 //  Post review Route
-router.post("/",  validateReview, wrapAsync(async (req, res) => { // here validate review pss as a middleware  & wrapAsync is used here to handling error 
+router.post("/", 
+    isLoggedIn,
+     validateReview,
+     wrapAsync(async (req, res) => { // here validate review pss as a middleware  & wrapAsync is used here to handling error 
     // console.log(req.params.id);
     try {
         const listing = await Listing.findById(req.params.id);
@@ -35,7 +22,9 @@ router.post("/",  validateReview, wrapAsync(async (req, res) => { // here valida
         if (!listing.reviews) {
             listing.reviews = [];
         }
-        const newReview = new Review(req.body.review);
+        let newReview = new Review(req.body.review);
+        newReview.author = req.user._id;
+        console.log(newReview)
         await newReview.save();
 
         listing.reviews.push(newReview._id);
