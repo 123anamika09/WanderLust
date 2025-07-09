@@ -33,7 +33,7 @@ router.get("/:id/edit",
 // update rout
 router.put("/:id" ,
     isLoggedIn,
-    wrapAsync(isOwner),
+    isOwner,
     validateListing,
     wrapAsync(listingController.updateListing)
 );
