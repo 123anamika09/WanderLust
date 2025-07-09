@@ -5,7 +5,13 @@
     <h3>Create a new List</h3>
     <br />
     <!--  validation from bootstrap is used here because by defualt browser msg we don'tt want it so we go thorugh bootstrap form -> vaidations & apply validation here -->
-    <form method="POST" action="/listings" novalidate class="needs-validation">
+    <form
+      method="POST"
+      action="/listings"
+      novalidate
+      class="needs-validation"
+      enctype="multipart/form-data"
+    >
       <div>
         <label for="title" class="form-label">Title</label>
         <input
@@ -26,15 +32,9 @@
         ></textarea>
         <div class="invalid-feedback">please enter a short description</div>
       </div>
-
       <div>
-        <label for="image" class="form-label">Image link</label>
-        <input
-          name="listing[image][url]"
-          placeholder=" enter image URL/link"
-          type="text"
-          class="form-control"
-        />
+        <label for="image" class="form-label"> Upload Image</label>
+        <input name="listing[image][url]" type="file" class="form-control" />
       </div>
 
       <div class="row">
