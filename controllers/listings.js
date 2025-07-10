@@ -32,16 +32,18 @@ console.log(listing.reviews);
 };
 //  post route 
 module.exports.createListing = async(req,res, next)=>{  // here it's async fnc we want to do changges in db show
-     const newListing = new Listing(req.body.listing);
-    //  console.log(req.user);
-     newListing.owner = req.user._id;
+    let url = req.file.path;
+    let filename = req.file.filename;
+    const newListing = new Listing(req.body.listing);
+    newListing.owner = req.user._id;
+    newListing.image = { url, filename };
     await newListing.save();
-
     req.flash("success","New Listing created");
     res.redirect("/listings");
-//    wrapSync is used here for  better way to write a try catch block 
 }
 
+
+//  edit route
 module.exports.renderEditForm = async (req, res) => {
     let { id } = req.params;
     const listing = await Listing.findById(id);
@@ -49,5 +51,42 @@ module.exports.renderEditForm = async (req, res) => {
     req.flash("error"," Listing not found DNE");
     res.redirect("/listings");
    }
-    res.render("listings/edit.ejs", { listing });
+    let originalImageUrl = listing.image.url;
+  let transformedImageUrl=  originalImageUrl.replace("/upload" ,"/upload/w_250");
+    res.render("listings/edit.ejs", { listing ,transformedImageUrl});
+}
+
+
+//Add the missing updateListing function
+module.exports.updateListing = async (req, res) => {
+    
+    let { id } = req.params;
+    let listing = await Listing.findById(id);
+    if (!listing) {
+        req.flash("error", "Listing not found");
+        return res.redirect("/listings");
+    }
+
+    // Update basic listing info
+    listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing });
+
+    // Handle image upload if a new image was provided
+    if (req.file) {
+        listing.image = {
+            url: req.file.path,
+            filename: req.file.filename
+        };
+        await listing.save();
+    }
+
+    req.flash("success", "Successfully updated listing!");
+    res.redirect(`/listings/${listing._id}`);
+};
+
+// Add the destroyListing function as well since it's referenced in routes
+module.exports.destroyListing = async (req, res) => {
+    let { id } = req.params;
+    await Listing.findByIdAndDelete(id);
+    req.flash("success", "Listing deleted");
+    res.redirect("/listings");
 }

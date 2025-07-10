@@ -13,14 +13,13 @@ const upload = multer({ storage }) // khud se upload file bnkr save ho gya wha h
 router
  .route("/")
  .get(wrapAsync(listingController.index))
-//  .post(
-//      isLoggedIn,
-//   validateListing,
-//     wrapAsync(listingController.createListing)
-// );
-.post( upload.single('listing[image][url]'),(req,res)=>{
-    res.send(req.file);
-})
+ .post(
+     isLoggedIn,
+  upload.single('image'), // multer middleware
+  validateListing,  //joi middleware
+    wrapAsync(listingController.createListing)
+ );
+
 
 // ----------------- new route ----------------------------
 router.get("/new",isLoggedIn,listingController.renderNewForm);
@@ -30,6 +29,7 @@ router.route("/:id")
 .put(
     isLoggedIn,
     isOwner,
+    upload.single('image'),
     validateListing,
     wrapAsync(listingController.updateListing)
 )

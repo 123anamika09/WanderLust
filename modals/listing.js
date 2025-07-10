@@ -1,22 +1,16 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const Review= require("./reviews.js");
-const User = require("./user.js")
+const User = require("./user.js");
+const { string } = require("joi");
 const listingSchema =  new Schema({
     title:{
        type: String,
        required:true,
     },
     image: {
-        filename: String,
-        url: {
-            type: String,
-            default: "https://elements.envato.com/field-landscape-county-kerry-ireland-PKQVQGW",
-            set: (v) =>
-                v === ""
-            ? "https://elements.envato.com/field-landscape-county-kerry-ireland-PKQVQGW"
-            : v,
-        },
+       url: String,
+      filename:String,
     },
     description:{
        type: String,
