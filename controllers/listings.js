@@ -1,9 +1,27 @@
 const Listing = require("../modals/listing.js")
 module.exports.index = async(req,res)=>{
-     const allListings= await Listing.find({});
-    //  console.log(allListings); 
+     const allListings = await Listing.find({});
      res.render("./listings/index.ejs",{allListings});
     }
+
+module.exports.filterListings = async(req,res)=>{
+    const { category } = req.params;
+    const filteredListings = await Listing.find({ category: category });
+    res.render("./listings/index.ejs", { allListings: filteredListings });
+}
+
+module.exports.searchListings = async(req,res)=>{
+    const { location } = req.query;
+    const searchRegex = new RegExp(location, 'i');
+    const listings = await Listing.find({
+        $or: [
+            { location: searchRegex },
+            { country: searchRegex },
+            { title: searchRegex }
+        ]
+    });
+    res.render("./listings/index.ejs", { allListings: listings });
+}
 //  new route ka call back ..... router me sirf uska path aur jo v functionality hogi wo controllers me
 module.exports.renderNewForm = (req,res)=>{ //isLOggedIn middleware passed here  
     res.render("listings/new.ejs" );// form render
@@ -31,15 +49,25 @@ console.log(listing.reviews);
 
 };
 //  post route 
-module.exports.createListing = async(req,res, next)=>{  // here it's async fnc we want to do changges in db show
-    let url = req.file.path;
-    let filename = req.file.filename;
-    const newListing = new Listing(req.body.listing);
-    newListing.owner = req.user._id;
-    newListing.image = { url, filename };
-    await newListing.save();
-    req.flash("success","New Listing created");
-    res.redirect("/listings");
+module.exports.createListing = async(req,res, next)=>{
+    try {
+        if (!req.file) {
+            req.flash("error", "Please upload an image");
+            return res.redirect("/listings/new");
+        }
+        let url = req.file.path;
+        let filename = req.file.filename;
+        const newListing = new Listing(req.body.listing);
+        newListing.owner = req.user._id;
+        newListing.image = { url, filename };
+        await newListing.save();
+        req.flash("success","New Listing created");
+        res.redirect("/listings");
+    } catch (error) {
+        console.error("Error creating listing:", error);
+        req.flash("error", "Error uploading image. Please try again.");
+        res.redirect("/listings/new");
+    }
 }
 
 
@@ -51,15 +79,12 @@ module.exports.renderEditForm = async (req, res) => {
     req.flash("error"," Listing not found DNE");
     res.redirect("/listings");
    }
-    let originalImageUrl = listing.image.url;
-  let transformedImageUrl=  originalImageUrl.replace("/upload" ,"/upload/w_250");
-    res.render("listings/edit.ejs", { listing ,transformedImageUrl});
+    res.render("listings/edit.ejs", { listing });
 }
 
 
 //Add the missing updateListing function
 module.exports.updateListing = async (req, res) => {
-    
     let { id } = req.params;
     let listing = await Listing.findById(id);
     if (!listing) {

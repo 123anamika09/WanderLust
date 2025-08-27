@@ -30,11 +30,11 @@ module.exports.createReview = async (req, res) => { // here validate review pss 
         res.status(500).send("Internal Server Error");
     }
 }
-
-module.exports.destroyReview = async (req, res) => {
-    let { id, reviewId } = req.params;
-    await Listing.findByIdAndUpdate(id, { $pull: { reviews: reviewId } });
-    await Review.findByIdAndDelete(reviewId);
-    req.flash("success", "Review deleted");
-    res.redirect(`/listings/${id}`);
+module.exports.destroyReview = async(req,res)=>{
+    let {id, reviewId} = req.params;
+   await Listing.findByIdAndUpdate(id, {$pull: { reviews: reviewId } });
+ // reviews array se reviewid ko delete krn 
+     await Review.findByIdAndDelete(reviewId);
+      req.flash("success","review deleted");
+     res.redirect(`/listings/${id}`);
 }

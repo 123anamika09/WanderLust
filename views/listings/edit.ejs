@@ -35,7 +35,7 @@
         Original Listing Image
         <br />
 
-        <img src="<%= transformedImageUrl %>" />
+        <img src="<%= listing.image.url %>" />
       </div>
 
       <div class="mb-3">
@@ -80,8 +80,21 @@
         <div class="invalid-feedback">please enter the valid location</div>
       </div>
 
-      <!-- here we make key of an object listing[country]-->
-      <!-- through this the syntax becomes easy to export thse  in app.js in the create route-->
+      <div class="mb-3">
+        <label for="category" class="form-label">Category</label>
+        <select name="listing[category]" class="form-control" required>
+          <option value="">Select a category</option>
+          <option value="Mountains" <%= listing.category === 'Mountains' ? 'selected' : '' %>>Mountains</option>
+          <option value="Pools" <%= listing.category === 'Pools' ? 'selected' : '' %>>Amazing Pools</option>
+          <option value="Beach" <%= listing.category === 'Beach' ? 'selected' : '' %>>Beach</option>
+          <option value="Trending" <%= listing.category === 'Trending' ? 'selected' : '' %>>Trending</option>
+          <option value="Castles" <%= listing.category === 'Castles' ? 'selected' : '' %>>Castles</option>
+          <option value="Camping" <%= listing.category === 'Camping' ? 'selected' : '' %>>Camping</option>
+          <option value="Farms" <%= listing.category === 'Farms' ? 'selected' : '' %>>Farms</option>
+          <option value="Arctic" <%= listing.category === 'Arctic' ? 'selected' : '' %>>Arctic</option>
+        </select>
+        <div class="invalid-feedback">Please select a category</div>
+      </div>
 
       <button class="btn btn-dark edit-btn mt-3">Edit</button>
     </form>

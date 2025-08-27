@@ -19,6 +19,11 @@ const listingSchema =  new Schema({
     price:Number,
     location:String,
     country:String,
+    category: {
+      type: String,
+      enum: ['Mountains', 'Pools', 'Beach', 'Trending', 'Castles', 'Camping', 'Farms', 'Arctic'],
+      required: true
+    },
    reviews: [
     {
       type: Schema.Types.ObjectId,
@@ -37,4 +42,4 @@ listingSchema.post("findOneAndDelete",async(listing)=>{
   }
 })
 const Listing = mongoose.model("Listing" ,listingSchema);
-module.exports= Listing;    
+module.exports= Listing;

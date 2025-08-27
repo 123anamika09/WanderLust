@@ -33,8 +33,8 @@
         <div class="invalid-feedback">please enter a short description</div>
       </div>
       <div>
-        <label for="image" class="form-label">Upload Image</label>
-        <input name="image" type="file" class="form-control" required />
++        <label for="image" class="form-label">Upload Image</label>
+        <input name="listing[image][url]" type="file" class="form-control" required />
       </div>
 
       <div class="row">
@@ -73,9 +73,23 @@
         <div class="invalid-feedback">please enter the location</div>
       </div>
 
-      <!-- here we make key of an object listing[country]-->
-      <!-- throught this the syntax becomes easy to export thse  in app.js in the create route-->
-      <br /><br />
+      <div class="mb-3">
+        <label for="category" class="form-label">Category</label>
+        <select name="listing[category]" class="form-control" required>
+          <option value="">Select a category</option>
+          <option value="Mountains">Mountains</option>
+          <option value="Pools">Amazing Pools</option>
+          <option value="Beach">Beach</option>
+          <option value="Trending">Trending</option>
+          <option value="Castles">Castles</option>
+          <option value="Camping">Camping</option>
+          <option value="Farms">Farms</option>
+          <option value="Arctic">Arctic</option>
+        </select>
+        <div class="invalid-feedback">Please select a category</div>
+      </div>
+
+      <br />
 
       <button class="btn btn-dark add-btn">Add</button>
     </form>

@@ -14,7 +14,6 @@ router.route("/signup")
 .post(wrapAsync(userController.signup));
 
 
-
 router.route("/login")
 .get(userController.renderLoginForm )
 .post(saveRedirectUrl,
@@ -23,5 +22,7 @@ router.route("/login")
     ),
     userController.login )
 
+
+    
 router.get("/logout",  userController.logout)
 module.exports = router;

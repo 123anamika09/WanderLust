@@ -6,7 +6,11 @@ const {isLoggedIn , isOwner ,validateListing} = require("../middleware.js")
 const listingController  = require("../controllers/listings.js")
 const multer  = require('multer')
 const {storage} = require("../cloudConfig.js")
-const upload = multer({ storage }) // khud se upload file bnkr save ho gya wha hm image store ho gya
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  timeout: 60000 // 60 seconds timeout
+});
 
 
 // It's a chained route handler — a more elegant and readable way to define multiple methods (GET, POST, PUT, DELETE, etc.) on the same route path.
@@ -15,11 +19,17 @@ router
  .get(wrapAsync(listingController.index))
  .post(
      isLoggedIn,
-  upload.single('image'), // multer middleware
+  upload.single('listing[image][url]'), // multer middleware
   validateListing,  //joi middleware
     wrapAsync(listingController.createListing)
  );
 
+
+// Search route
+router.get("/search", wrapAsync(listingController.searchListings));
+
+// Filter route
+router.get("/filter/:category", wrapAsync(listingController.filterListings));
 
 // ----------------- new route ----------------------------
 router.get("/new",isLoggedIn,listingController.renderNewForm);
@@ -29,7 +39,7 @@ router.route("/:id")
 .put(
     isLoggedIn,
     isOwner,
-    upload.single('image'),
+upload.single('listing[image][url]'),
     validateListing,
     wrapAsync(listingController.updateListing)
 )

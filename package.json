@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+     "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -26,5 +27,14 @@
     "passport-local": "^1.0.0",
     "passport-local-mongoose": "^8.0.0"
   },
-  "description": ""
+  "description": "Wanderlust is a travel exploration platform designed to help users discover exciting destinations and plan personalized itineraries. It provides essential travel information, user-friendly planning tools, and an interactive community for sharing experiences. Whether you're a solo traveler or planning a group trip, Wanderlust makes travel planning seamless and enjoyable.\r WanderLust is a full-stack travel listing web application built using **Node.js**, **Express**, **MongoDB**, and **EJS**. It allows users to view, create, and edit listings with proper validation and error handling.",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/123anamika09/WanderLust.git"
+  },
+  "bugs": {
+    "url": "https://github.com/123anamika09/WanderLust/issues"
+  },
+  "homepage": "https://github.com/123anamika09/WanderLust#readme"
 }
