@@ -8,16 +8,90 @@
         <img src="<%=listing.image.url%>"  class="card-img-top  show-img" alt="listing_image">
         <div class="card-body">
          <!-- <b> <p class="card-text"><%=listing.title%></p></b> -->
+
           <br> 
-         <p class="card-text"> Owned by - <i><%= listing.owner.username %></i></p> 
+              <% if (listing.owner && listing.owner.username) { %>
+        <p class="card-text"> Owned by - <i><%= listing.owner.username %></i></p>
+      <% } else { %>
+        <p class="card-text">
+  Owned by - <i><%= listing.owner ? listing.owner.username : "Unknown" %></i>
+</p>
+      <% } %>
+ 
         <p class="card-text">  <%= listing.description %></p>
          <p class="card-text"> &#x20B9 <%=listing.price.toLocaleString("en-in")%> </p>
          <p class="card-text"> <%=listing.location%> </p>
          <p class="card-text"> <%=listing.country%> </p>
-        </div>  
+        </div>
+
+<!-- booking details -->
+<div class="card-body bg-light border-top border-bottom py-4 my-3">
+  <div class="text-center">
+    <h4 class="mb-3">Ready for an amazing stay?</h4>
+    
+    <!-- Availability status -->
+    <div id="availability-status" class="mb-3">
+      <div class="d-flex justify-content-center">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <span class="ms-2">Checking availability...</span>
+      </div>
+    </div>
+    
+    <% if (currUser) { %>
+      <a href="/listings/<%= listing._id %>/book" id="book-now-btn" class="btn btn-success btn-lg shadow-sm">
+        <i class="fas fa-calendar-check me-2"></i>Book Now
+      </a>
+      <a href="/listings/availability" class="btn btn-outline-primary btn-sm ms-2">
+        <i class="fas fa-list me-1"></i>View All Available Listings
+      </a>
+    <% } else { %>
+      <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle me-2"></i>
+        Please <a href="/login" class="alert-link">login</a> to book this place.
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Unavailable Modal -->
+<div class="modal fade" id="unavailableModal" tabindex="-1" aria-labelledby="unavailableModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="unavailableModalLabel">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          This listing is not available
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>We're sorry, but this listing is not available for the selected dates.</p>
+        <h6 class="mb-3">Booked dates:</h6>
+        <div id="booked-dates-list" class="list-group mb-3">
+          <div class="d-flex justify-content-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <span class="ms-2">Loading booked dates...</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a href="/listings/availability" class="btn btn-primary">
+          <i class="fas fa-search me-1"></i>Find Available Listings
+        </a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
       </div>
 
-   <% if(currUser && listing.owner._id.equals(currUser._id)){%>
+     <% if (currUser && listing.owner && listing.owner._id.equals(currUser._id)) { %>
      <div class="btns">
     <!-- make a route forrr this -->
     <a href="/listings/<%=listing._id%>/edit" class="btn btn-dark col-1 offset-3 edit-btn"> Edit</a> <!-- here we do changes in listing by gettting it's id-->
@@ -30,6 +104,130 @@
 
   </div>
 <%}%>  
+
+<script>
+  document.addEventListener('DOMContentLoaded', async function() {
+    // Only run this code if the user is logged in
+    <% if (currUser) { %>
+      const listingId = '<%= listing._id %>';
+      const availabilityStatus = document.getElementById('availability-status');
+      const bookNowBtn = document.getElementById('book-now-btn');
+      const unavailableModal = new bootstrap.Modal(document.getElementById('unavailableModal'));
+      const bookedDatesList = document.getElementById('booked-dates-list');
+      
+      try {
+        // Check immediate availability (today to tomorrow)
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const response = await fetch('/check-availability', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            listingId: listingId,
+            checkIn: today.toISOString().split('T')[0],
+            checkOut: tomorrow.toISOString().split('T')[0]
+          })
+        });
+        
+        const data = await response.json();
+        
+        // Update availability status
+        if (data.available) {
+          availabilityStatus.innerHTML = `
+            <div class="alert alert-success" role="alert">
+              <i class="fas fa-check-circle me-2"></i>
+              <strong>Available for booking!</strong> Book now to secure your stay.
+            </div>
+          `;
+        } else {
+          availabilityStatus.innerHTML = `
+            <div class="alert alert-warning" role="alert">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              <strong>Currently unavailable</strong> for immediate booking.
+              <button type="button" class="btn btn-link p-0 ms-2" id="show-booked-dates">See booked dates</button>
+            </div>
+          `;
+          
+          // Add event listener to show booked dates
+          document.getElementById('show-booked-dates').addEventListener('click', function() {
+            // Fetch booked dates
+            fetchBookedDates();
+            unavailableModal.show();
+          });
+        }
+        
+        // Add event listener to book now button
+        bookNowBtn.addEventListener('click', async function(e) {
+          if (!data.available) {
+            e.preventDefault();
+            fetchBookedDates();
+            unavailableModal.show();
+          }
+        });
+      } catch (err) {
+        console.error('Error checking availability:', err);
+        availabilityStatus.innerHTML = `
+          <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong>Error checking availability.</strong> Please try again later.
+          </div>
+        `;
+      }
+      
+      // Function to fetch and display booked dates
+      async function fetchBookedDates() {
+        try {
+          // This would be a real API call in production
+          // For now, we'll simulate it with a timeout
+          setTimeout(() => {
+            // Clear previous entries
+            bookedDatesList.innerHTML = '';
+            
+            // Add some sample booked dates (in a real app, these would come from the server)
+            const nextWeek = new Date(today);
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            
+            const nextMonth = new Date(today);
+            nextMonth.setDate(nextMonth.getDate() + 30);
+            
+            const bookedDates = [
+              { start: today, end: tomorrow },
+              { start: nextWeek, end: new Date(nextWeek.getTime() + (3 * 24 * 60 * 60 * 1000)) },
+              { start: nextMonth, end: new Date(nextMonth.getTime() + (5 * 24 * 60 * 60 * 1000)) }
+            ];
+            
+            bookedDates.forEach(booking => {
+              const startDate = booking.start.toLocaleDateString();
+              const endDate = booking.end.toLocaleDateString();
+              
+              const listItem = document.createElement('div');
+              listItem.className = 'list-group-item';
+              listItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="fas fa-calendar-times text-danger me-2"></i>
+                    ${startDate} to ${endDate}
+                  </div>
+                  <span class="badge bg-danger rounded-pill">${Math.round((booking.end - booking.start) / (24 * 60 * 60 * 1000))} nights</span>
+                </div>
+              `;
+              
+              bookedDatesList.appendChild(listItem);
+            });
+          }, 500);
+        } catch (err) {
+          console.error('Error fetching booked dates:', err);
+          bookedDatesList.innerHTML = '<div class="alert alert-danger">Error loading booked dates</div>';
+        }
+      }
+    <% } %>
+  });
+</script>
+
   <div class="col-8 offset-3 mb-3">
     <hr> 
     <% if(currUser) {%>

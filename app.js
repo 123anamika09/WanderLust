@@ -103,7 +103,11 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/listings",listingRouter)
+// Mount booking routes first to ensure availability route is processed before listing ID routes
+app.use("/", require("./routes/bookings.js"));
+
+// Mount other routes
+app.use("/listings",listingRouter);
 app.use("/listings/:id/reviews",reviewsRouter);
 app.use("/", userRouter);
 

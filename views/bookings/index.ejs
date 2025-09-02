@@ -1,0 +1,51 @@
+<% layout("/layouts/boilerplate")%>
+
+<div class="container mt-4">
+  <h1 class="mb-4">My Bookings</h1>
+
+  <% if (bookings.length === 0) { %>
+    <div class="alert alert-info" role="alert">
+      <i class="fas fa-info-circle me-2"></i> You have no bookings yet.
+    </div>
+  <% } else { %>
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+      <% bookings.forEach(b => { %>
+        <div class="col">
+          <div class="card h-100 shadow-sm">
+            <% if (b.place.image && b.place.image.url) { %>
+              <img src="<%= b.place.image.url %>" class="card-img-top" alt="<%= b.place.title %>" style="height: 200px; object-fit: cover;">
+            <% } else { %>
+              <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">
+                <i class="fas fa-home fa-3x"></i>
+              </div>
+            <% } %>
+            <div class="card-body">
+              <h5 class="card-title"><%= b.place.title %></h5>
+              <div class="card-text">
+                <div class="mb-2">
+                  <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                  <% if (b.place.location && b.place.country) { %>
+                    <%= b.place.location %>, <%= b.place.country %>
+                  <% } else { %>
+                    Location not specified
+                  <% } %>
+                </div>
+                <div class="mb-2">
+                  <i class="fas fa-calendar-alt text-primary me-2"></i>
+                  <%= b.checkIn.toDateString() %> to <%= b.checkOut.toDateString() %>
+                </div>
+                <div>
+                  <i class="fas fa-user-friends text-success me-2"></i>
+                  <%= b.guests %> guest<%= b.guests !== 1 ? 's' : '' %>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer bg-white">
+              <small class="text-muted">Booked on <%= b.createdAt.toDateString() %></small>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>

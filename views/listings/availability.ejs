@@ -1,0 +1,111 @@
+<% layout("/layouts/boilerplate")%>
+
+<div class="container mt-4">
+  <h1 class="mb-4 text-center">Listings Availability</h1>
+  
+  <div class="row mb-4">
+    <div class="col-md-6 offset-md-3">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Filter by Date</h5>
+        </div>
+        <div class="card-body">
+          <form id="availability-filter-form" class="row g-3">
+            <div class="col-md-5">
+              <label for="checkInDate" class="form-label">Check-in Date</label>
+              <input type="date" class="form-control" id="checkInDate" name="checkIn" required>
+            </div>
+            <div class="col-md-5">
+              <label for="checkOutDate" class="form-label">Check-out Date</label>
+              <input type="date" class="form-control" id="checkOutDate" name="checkOut" required>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card shadow mb-4">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Available Listings</h5>
+        </div>
+        <div class="card-body">
+          <div id="available-listings" class="list-group">
+            <% listings.filter(listing => listing.isAvailable).forEach(listing => { %>
+              <a href="/listings/<%= listing._id %>" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                  <h5 class="mb-1"><%= listing.title %></h5>
+                  <span class="badge bg-success">Available</span>
+                </div>
+                <p class="mb-1"><%= listing.location %>, <%= listing.country %></p>
+                <small>&#x20B9; <%= listing.price.toLocaleString("en-in") %> per night</small>
+              </a>
+            <% }) %>
+            
+            <% if (listings.filter(listing => listing.isAvailable).length === 0) { %>
+              <div class="alert alert-info mb-0">
+                <i class="fas fa-info-circle me-2"></i>No available listings found for the selected dates.
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-6">
+      <div class="card shadow mb-4">
+        <div class="card-header bg-danger text-white">
+          <h5 class="mb-0">Unavailable Listings</h5>
+        </div>
+        <div class="card-body">
+          <div id="unavailable-listings" class="list-group">
+            <% listings.filter(listing => !listing.isAvailable).forEach(listing => { %>
+              <a href="/listings/<%= listing._id %>" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                  <h5 class="mb-1"><%= listing.title %></h5>
+                  <span class="badge bg-danger">Unavailable</span>
+                </div>
+                <p class="mb-1"><%= listing.location %>, <%= listing.country %></p>
+                <small>&#x20B9; <%= listing.price.toLocaleString("en-in") %> per night</small>
+              </a>
+            <% }) %>
+            
+            <% if (listings.filter(listing => !listing.isAvailable).length === 0) { %>
+              <div class="alert alert-info mb-0">
+                <i class="fas fa-info-circle me-2"></i>All listings are available for the selected dates.
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    document.getElementById('checkInDate').value = today.toISOString().split('T')[0];
+    document.getElementById('checkOutDate').value = tomorrow.toISOString().split('T')[0];
+    
+    // Handle form submission
+    document.getElementById('availability-filter-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const checkIn = document.getElementById('checkInDate').value;
+      const checkOut = document.getElementById('checkOutDate').value;
+      
+      // Redirect to the same page with query parameters
+      window.location.href = `/listings/availability?checkIn=${checkIn}&checkOut=${checkOut}`;
+    });
+  });
+</script>

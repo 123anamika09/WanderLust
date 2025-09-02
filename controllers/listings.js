@@ -45,7 +45,7 @@ console.log(listing.reviews);
     res.redirect("/listings");
    }
    console.log(listing)
-   res.render("./listings/show.ejs",{listing});
+   res.render("./listings/show.ejs",{listing ,currUser: req.user });
 
 };
 //  post route 

@@ -1,0 +1,215 @@
+<% layout("/layouts/boilerplate")%>
+
+<div class="row mt-4">
+  <div class="col-lg-8 offset-lg-2">
+    <h2 class="mb-4 text-center">Book Your Stay</h2>
+    <div class="card mb-4 shadow">
+      <div class="row g-0">
+        <div class="col-md-5">
+          <img src="<%= listing.image.url %>" class="img-fluid rounded-start h-100" style="object-fit: cover;" alt="<%= listing.title %>">
+        </div>
+        <div class="col-md-7">
+          <div class="card-body">
+            <h3 class="card-title"><%= listing.title %></h3>
+            <div class="d-flex align-items-center mb-2">
+              <i class="fas fa-map-marker-alt text-danger me-2"></i>
+              <p class="card-text mb-0"><%= listing.location %>, <%= listing.country %></p>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+              <i class="fas fa-tag text-success me-2"></i>
+              <p class="card-text mb-0"><strong>&#x20B9; <%= listing.price.toLocaleString("en-in") %></strong> per night</p>
+            </div>
+            <% if (listing.category) { %>
+            <div class="d-flex align-items-center mb-2">
+              <i class="fas fa-th-large text-primary me-2"></i>
+              <p class="card-text mb-0">Category: <%= listing.category %></p>
+            </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow mb-4">
+      <div class="card-header bg-light">
+        <h4 class="mb-0">Booking Details</h4>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="/book" class="needs-validation" novalidate>
+          <input type="hidden" name="placeId" value="<%= listing._id %>">
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="checkIn" class="form-label"><i class="fas fa-calendar-check text-primary me-2"></i>Check-In Date</label>
+              <input type="date" class="form-control" id="checkIn" name="checkIn" required>
+              <div class="invalid-feedback">Please select a check-in date.</div>
+            </div>
+            
+            <div class="col-md-6 mb-3">
+              <label for="checkOut" class="form-label"><i class="fas fa-calendar-minus text-danger me-2"></i>Check-Out Date</label>
+              <input type="date" class="form-control" id="checkOut" name="checkOut" required>
+              <div class="invalid-feedback">Please select a check-out date.</div>
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <label for="guests" class="form-label"><i class="fas fa-users text-success me-2"></i>Number of Guests</label>
+            <input type="number" class="form-control" id="guests" name="guests" min="1" max="<%= listing.maxGuests || 10 %>" value="1" required>
+            <div class="invalid-feedback">Please enter a valid number of guests.</div>
+            <small class="text-muted">Maximum guests allowed: <%= listing.maxGuests || 10 %></small>
+          </div>
+          
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-success btn-lg">Confirm Booking</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Set minimum dates for check-in and check-out
+  const today = new Date();
+  const todayString = today.toISOString().split('T')[0];
+  
+  // Set default values and min attributes
+  const checkInInput = document.getElementById('checkIn');
+  const checkOutInput = document.getElementById('checkOut');
+  
+  // Set min date to today for check-in
+  checkInInput.setAttribute('min', todayString);
+  
+  // Default check-in to today if not already set
+  if (!checkInInput.value) {
+    checkInInput.value = todayString;
+  }
+  
+  // Calculate tomorrow's date for default check-out
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowString = tomorrow.toISOString().split('T')[0];
+  
+  // Set min date for check-out to check-in date or tomorrow
+  checkOutInput.setAttribute('min', checkInInput.value || tomorrowString);
+  
+  // Default check-out to tomorrow if not already set
+  if (!checkOutInput.value) {
+    checkOutInput.value = tomorrowString;
+  }
+  
+  // Get existing bookings from server
+  let existingBookings = [];
+  try {
+    existingBookings = JSON.parse('<%= existingBookings %>');
+  } catch (e) {
+    console.error('Error parsing existingBookings:', e);
+    existingBookings = [];
+  }
+  
+  // Function to check if a date is already booked
+  function isDateBooked(date) {
+    const dateToCheck = new Date(date);
+    dateToCheck.setHours(0, 0, 0, 0);
+    
+    return existingBookings.some(booking => {
+      const checkIn = new Date(booking.checkIn);
+      const checkOut = new Date(booking.checkOut);
+      checkIn.setHours(0, 0, 0, 0);
+      checkOut.setHours(0, 0, 0, 0);
+      
+      return dateToCheck >= checkIn && dateToCheck <= checkOut;
+    });
+  }
+  
+  // Function to check availability for selected dates
+  async function checkAvailability(checkIn, checkOut) {
+    try {
+      const response = await fetch('/check-availability', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          listingId: '<%= listing._id %>',
+          checkIn,
+          checkOut
+        })
+      });
+      
+      const data = await response.json();
+      return data.available;
+    } catch (err) {
+      console.error('Error checking availability:', err);
+      return false;
+    }
+  }
+  
+  // Create a modal for unavailable dates
+  const modalHTML = `
+    <div class="modal fade" id="unavailableModal" tabindex="-1" aria-labelledby="unavailableModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="unavailableModalLabel">Unavailable Dates</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Sorry, this listing is not available for the selected dates.</p>
+            <p>Please choose different dates or check our other available listings.</p>
+            <a href="/listings/availability" class="btn btn-primary mt-2">View Available Listings</a>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  const unavailableModal = new bootstrap.Modal(document.getElementById('unavailableModal'));
+  
+  // Add event listener to form submission
+  document.querySelector('form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const checkIn = checkInInput.value;
+    const checkOut = checkOutInput.value;
+    
+    const isAvailable = await checkAvailability(checkIn, checkOut);
+    
+    if (isAvailable) {
+      // If available, submit the form
+      this.submit();
+    } else {
+      // If not available, show the modal
+      unavailableModal.show();
+    }
+  });
+  
+  // Update check-out min date when check-in changes
+  checkInInput.addEventListener('change', function() {
+    // Ensure check-out is at least one day after check-in
+    checkOutInput.setAttribute('min', this.value);
+    
+    // If check-out date is now before check-in, update it
+    if (checkOutInput.value < this.value) {
+      // Set check-out to the day after check-in
+      const nextDay = new Date(this.value);
+      nextDay.setDate(nextDay.getDate() + 1);
+      checkOutInput.value = nextDay.toISOString().split('T')[0];
+    }
+  });
+  
+  // Form validation
+  const form = document.querySelector('form');
+  form.addEventListener('submit', function(event) {
+    if (!form.checkValidity()) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    form.classList.add('was-validated');
+  });
+</script>
