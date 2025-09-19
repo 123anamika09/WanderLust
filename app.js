@@ -19,7 +19,7 @@ const flash  = require("connect-flash");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const User = require("./modals/user.js")
-
+const bookingRoutes = require("./routes/bookings");
 //database connectivity
 const Mongo_url = "mongodb://127.0.0.1:27017/wanderlust";
 main().then(()=>{
@@ -103,13 +103,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Mount booking routes first to ensure availability route is processed before listing ID routes
-app.use("/", require("./routes/bookings.js"));
-
-// Mount other routes
-app.use("/listings",listingRouter);
+app.use("/listings",listingRouter)
 app.use("/listings/:id/reviews",reviewsRouter);
 app.use("/", userRouter);
+app.use("/", bookingRoutes);
 
 
 //  to send standard response like routes doesnot match to any path then it send 404 not found

@@ -170,46 +170,63 @@
   document.body.insertAdjacentHTML('beforeend', modalHTML);
   const unavailableModal = new bootstrap.Modal(document.getElementById('unavailableModal'));
   
-  // Add event listener to form submission
-  document.querySelector('form').addEventListener('submit', async function(e) {
-    e.preventDefault();
+  // Update check-out min date when check-in changes
+  checkInInput.addEventListener('change', function() {
+    const selectedCheckIn = new Date(this.value);
     
+    // Ensure check-out is at least one day after check-in
+    checkOutInput.setAttribute('min', this.value);
+    
+    // If check-out date is now before or equal to check-in, update it
+    if (checkOutInput.value <= this.value) {
+      // Set check-out to the day after check-in
+      const nextDay = new Date(selectedCheckIn);
+      nextDay.setDate(nextDay.getDate() + 1);
+      checkOutInput.value = nextDay.toISOString().split('T')[0];
+    }
+    
+    // Trigger change event on check-out to update any dependent calculations
+    checkOutInput.dispatchEvent(new Event('change'));
+  });
+  
+  // Add change listener to check-out date as well
+  checkOutInput.addEventListener('change', function() {
+    // Ensure check-out is after check-in
+    if (this.value <= checkInInput.value) {
+      const checkInDate = new Date(checkInInput.value);
+      const nextDay = new Date(checkInDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      this.value = nextDay.toISOString().split('T')[0];
+    }
+  });
+  
+  // Combined form validation and availability check
+  const form = document.querySelector('form');
+  form.addEventListener('submit', async function(event) {
+    event.preventDefault();
+    
+    // First check form validity
+    if (!form.checkValidity()) {
+      event.stopPropagation();
+      form.classList.add('was-validated');
+      return;
+    }
+    
+    form.classList.add('was-validated');
+    
+    // Then check availability
     const checkIn = checkInInput.value;
     const checkOut = checkOutInput.value;
     
     const isAvailable = await checkAvailability(checkIn, checkOut);
     
     if (isAvailable) {
-      // If available, submit the form
-      this.submit();
+      // If available, submit the form normally
+      form.removeEventListener('submit', arguments.callee);
+      form.submit();
     } else {
       // If not available, show the modal
       unavailableModal.show();
     }
-  });
-  
-  // Update check-out min date when check-in changes
-  checkInInput.addEventListener('change', function() {
-    // Ensure check-out is at least one day after check-in
-    checkOutInput.setAttribute('min', this.value);
-    
-    // If check-out date is now before check-in, update it
-    if (checkOutInput.value < this.value) {
-      // Set check-out to the day after check-in
-      const nextDay = new Date(this.value);
-      nextDay.setDate(nextDay.getDate() + 1);
-      checkOutInput.value = nextDay.toISOString().split('T')[0];
-    }
-  });
-  
-  // Form validation
-  const form = document.querySelector('form');
-  form.addEventListener('submit', function(event) {
-    if (!form.checkValidity()) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    
-    form.classList.add('was-validated');
   });
 </script>
